@@ -122,7 +122,7 @@ type ExtendedPrivateKey []byte
 
 // Public returns the PublicKey corresponding to priv.
 func (xpriv ExtendedPrivateKey) Public() crypto.PublicKey {
-	return PublicKey(publicKeyFromExtendedKey(xpriv))
+	return PublicKey(PublicKeyFrom(xpriv))
 }
 
 // Sign signs the given message with xpriv.
@@ -223,7 +223,7 @@ func newKeyPairFromSeed(seed []byte) (PublicKey, ExtendedPrivateKey) {
 	var publicKeyBytes [32]byte
 	A.ToBytes(&publicKeyBytes)
 
-	return PublicKey(publicKeyBytes[:]), ExtendedPrivateKey(digest[:])
+	return publicKeyBytes[:], digest[:]
 }
 
 // Sign signs the message with privateKey and returns a signature. It will
@@ -314,7 +314,7 @@ func signExtended(signature, extendedPrivateKey, message []byte) {
 
 	h.Reset()
 	h.Write(encodedR[:])
-	h.Write(publicKeyFromExtendedKey(extendedPrivateKey))
+	h.Write(PublicKeyFrom(extendedPrivateKey))
 	h.Write(message)
 	h.Sum(hramDigest[:0])
 	var hramDigestReduced [32]byte
@@ -327,10 +327,11 @@ func signExtended(signature, extendedPrivateKey, message []byte) {
 	copy(signature[32:], s[:])
 }
 
-func publicKeyFromExtendedKey(xpriv []byte) []byte {
+// PublicKeyFrom returns the PublicKey corresponding to extendedPrivateKey.
+func PublicKeyFrom(extendedPrivateKey ExtendedPrivateKey) PublicKey {
 	var A edwards25519.ExtendedGroupElement
 	var hBytes [32]byte
-	copy(hBytes[:], xpriv[:32])
+	copy(hBytes[:], extendedPrivateKey[:32])
 	edwards25519.GeScalarMultBase(&A, &hBytes)
 	var publicKeyBytes [32]byte
 	A.ToBytes(&publicKeyBytes)
